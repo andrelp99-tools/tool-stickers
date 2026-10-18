@@ -48,6 +48,14 @@ jobs:
           keyPassword=${{ secrets.KEY_PASSWORD }}
           EOF
 
+      # api_keys.dart non è nel repo originale (chiave Google Fonts). Vuota = ricerca
+      # nuovi font disattivata; si può mettere una chiave nel segreto FONTS_API_KEY.
+      - name: Chiavi API
+        env:
+          FONTS_API_KEY: ${{ secrets.FONTS_API_KEY }}
+        run: |
+          [ -f lib/src/api_keys.dart ] || echo "const String fontsKey = '${FONTS_API_KEY}';" > lib/src/api_keys.dart
+
       - name: Dipendenze
         run: |
           flutter pub get

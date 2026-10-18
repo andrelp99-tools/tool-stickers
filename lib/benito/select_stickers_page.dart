@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stickers/benito/pack_importer.dart';
 import 'package:stickers/benito/strings.dart';
 import 'package:stickers/benito/webp_codec.dart';
+import 'package:stickers/src/constants.dart';
 import 'package:stickers/src/globals.dart';
 
 /// Un'immagine candidata: [key] la riconosce tra un import e l'altro.

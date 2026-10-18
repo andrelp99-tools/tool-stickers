@@ -6,6 +6,7 @@ import 'package:stickers/benito/webp_codec.dart';
 import 'package:stickers/src/data/load_store.dart';
 import 'package:stickers/src/data/sticker.dart';
 import 'package:stickers/src/data/sticker_pack.dart';
+import 'package:stickers/src/constants.dart';
 import 'package:stickers/src/globals.dart';
 
 const int maxStickersPerPack = 30;
