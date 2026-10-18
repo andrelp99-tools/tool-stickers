@@ -34,6 +34,33 @@
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <!-- BenitoSticker: tastiera sticker -->
+        <service
+            android:name="it.andrelp99.benito.keyboard.StickerKeyboardService"
+            android:label="BenitoSticker"
+            android:permission="android.permission.BIND_INPUT_METHOD"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/benito_method" />
+        </service>
+        <provider
+            android:name="it.andrelp99.benito.keyboard.BenitoFileProvider"
+            android:authorities="${applicationId}.benito.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/benito_file_paths" />
+        </provider>
+
+        <!-- BenitoSticker: scarica il modello "rimuovi sfondo" all'installazione -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="subject_segment" />
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

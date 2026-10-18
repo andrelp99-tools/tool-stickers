@@ -52,7 +52,7 @@ android {
         applicationId "it.andrelp99.benitosticker" // BenitoSticker
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion flutter.minSdkVersion
+        minSdkVersion 24 // BenitoSticker: ML Kit rimozione sfondo
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -87,3 +87,9 @@ flutter {
 }
 
 dependencies {}
+
+// BenitoSticker: rimozione sfondo (ML Kit, modello tramite Google Play services)
+dependencies {
+    implementation "com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1"
+    implementation "androidx.core:core-ktx:1.13.1" // tastiera: FileProvider, commitContent
+}

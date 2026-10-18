@@ -107,6 +107,39 @@ class BenitoPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandl
                 }
             }
 
+            "removeBackground" -> scope.launch {
+                try {
+                    val path = withContext(Dispatchers.IO) {
+                        BenitoBackground.removeBackground(context!!, File(call.argument<String>("path")!!))
+                    }
+                    result.success(path)
+                } catch (e: Exception) {
+                    result.error("NO_BG_FAILED", e.message ?: e.toString(), null)
+                }
+            }
+
+            "keyboardEnabled" -> {
+                val imm = context!!.getSystemService(Context.INPUT_METHOD_SERVICE)
+                        as android.view.inputmethod.InputMethodManager
+                result.success(imm.enabledInputMethodList.any {
+                    it.packageName == context!!.packageName
+                })
+            }
+
+            "openKeyboardSettings" -> {
+                val i = Intent(android.provider.Settings.ACTION_INPUT_METHOD_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context!!.startActivity(i)
+                result.success(null)
+            }
+
+            "showKeyboardPicker" -> {
+                val imm = context!!.getSystemService(Context.INPUT_METHOD_SERVICE)
+                        as android.view.inputmethod.InputMethodManager
+                imm.showInputMethodPicker()
+                result.success(null)
+            }
+
             else -> result.notImplemented()
         }
     }

@@ -35,6 +35,21 @@ class BStr {
   static String get cont => _t('Continua', 'Continue');
   static String get cancel => _t('Annulla', 'Cancel');
 
+  // Tastiera
+  static String get keyboard => _t('Tastiera sticker', 'Sticker keyboard');
+  static String get keyboardOff => _t(
+      'Non attiva: tocca per attivarla (Impostazioni → BenitoSticker)',
+      'Not enabled: tap to enable it (Settings → BenitoSticker)');
+  static String get keyboardOn => _t(
+      'Attiva. In una chat tieni premuto il tasto tastiera/globo di Gboard per sceglierla',
+      'Enabled. In a chat, long-press the keyboard/globe key in Gboard to pick it');
+
+  // Rimuovi sfondo
+  static String get removeBg => _t('Rimuovi sfondo', 'Remove background');
+  static String get removeBgFailed => _t(
+      'Sfondo non rimosso. Se è il primo utilizzo, il modello si sta scaricando: riprova tra poco.',
+      'Background not removed. If this is the first use, the model is downloading: try again shortly.');
+
   // Pagina TikTok
   static String get tiktokTitle => _t('Sticker da TikTok', 'TikTok stickers');
   static String found(int n) => _t('$n trovati', '$n found');

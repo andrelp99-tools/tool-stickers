@@ -1,5 +1,6 @@
 // BenitoSticker: menu "Importa" con le fonti aggiunte dal fork.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:stickers/benito/strings.dart';
 import 'package:stickers/benito/tiktok/tiktok_page.dart';
 import 'package:stickers/benito/whatsapp_received.dart';
@@ -57,9 +58,60 @@ void showBenitoImportSheet(BuildContext context) {
               openWhatsAppReceivedImport(context);
             },
           ),
+          const Divider(),
+          const _KeyboardTile(),
           const SizedBox(height: 8),
         ],
       ),
     ),
   );
+}
+
+const _channel = MethodChannel('it.andrelp99.benito/main');
+
+class _KeyboardTile extends StatefulWidget {
+  const _KeyboardTile();
+
+  @override
+  State<_KeyboardTile> createState() => _KeyboardTileState();
+}
+
+class _KeyboardTileState extends State<_KeyboardTile> with WidgetsBindingObserver {
+  bool? _enabled;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _check();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _check();
+  }
+
+  Future<void> _check() async {
+    try {
+      final v = await _channel.invokeMethod<bool>('keyboardEnabled');
+      if (mounted) setState(() => _enabled = v);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final on = _enabled == true;
+    return ListTile(
+      leading: Icon(on ? Icons.keyboard : Icons.keyboard_outlined),
+      title: Text(BStr.keyboard),
+      subtitle: Text(on ? BStr.keyboardOn : BStr.keyboardOff),
+      onTap: () => _channel.invokeMethod(on ? 'showKeyboardPicker' : 'openKeyboardSettings'),
+    );
+  }
 }

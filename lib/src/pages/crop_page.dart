@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:stickers/benito/remove_bg.dart';
 import 'package:stickers/generated/intl/app_localizations.dart';
 import 'package:stickers/src/checker_painter.dart';
 import 'package:stickers/src/data/load_store.dart';
@@ -58,12 +59,19 @@ class _CropPageState extends State<CropPage> with TickerProviderStateMixin {
   }
 
   double? _aspectRatio;
+  String? _benitoPath; // BenitoSticker: immagine con sfondo rimosso
 
   @override
   Widget build(BuildContext context) {
     return DefaultActivity(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.cropYourSticker),
+        actions: [
+          RemoveBackgroundButton(
+            imagePath: _benitoPath ?? widget.imagePath,
+            onDone: (path) => setState(() => _benitoPath = path),
+          ),
+        ],
       ),
       child: SafeArea(
         child: Column(
@@ -77,7 +85,8 @@ class _CropPageState extends State<CropPage> with TickerProviderStateMixin {
                 clipBehavior: Clip.antiAlias,
                 decoration: const BoxDecoration(),
                 child: ExtendedImage.file(
-                  File(widget.imagePath),
+                  File(_benitoPath ?? widget.imagePath),
+                  key: ValueKey(_benitoPath ?? widget.imagePath),
                   fit: BoxFit.contain,
                   beforePaintImage: (canvas, rect, image, paint) {
                     CheckerPainter.checkerPainter(canvas, rect, context);
