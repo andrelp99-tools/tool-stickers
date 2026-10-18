@@ -7,7 +7,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stickers/benito/strings.dart';
-import 'package:stickers/benito/tiktok/tiktok_select_page.dart';
+import 'package:http/http.dart' as http;
+import 'package:stickers/benito/select_stickers_page.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 const tiktokMessagesUrl = 'https://www.tiktok.com/messages';
@@ -70,6 +71,42 @@ String stickerKey(String url) {
   if (uri == null) return url;
   return uri.path;
 }
+
+/// Scarica gli sticker (4 alla volta) con gli header di un browser desktop.
+CandidateLoader tiktokLoader(List<String> urls) => (onProgress) async {
+      final result = <CandidateImage>[];
+      final queue = List<String>.from(urls);
+      var done = 0, failed = 0;
+      final client = http.Client();
+      Future<void> worker() async {
+        while (queue.isNotEmpty) {
+          final url = queue.removeAt(0);
+          try {
+            final res = await client.get(Uri.parse(url), headers: {
+              'User-Agent': desktopUserAgent,
+              'Referer': 'https://www.tiktok.com/',
+            }).timeout(const Duration(seconds: 20));
+            if (res.statusCode == 200 && res.bodyBytes.isNotEmpty) {
+              result.add(CandidateImage(stickerKey(url), res.bodyBytes));
+            } else {
+              failed++;
+            }
+          } catch (_) {
+            failed++;
+          }
+          done++;
+          onProgress(done, urls.length, failed);
+        }
+      }
+
+      try {
+        onProgress(0, urls.length, 0);
+        await Future.wait(List.generate(4, (_) => worker()));
+      } finally {
+        client.close();
+      }
+      return result;
+    };
 
 class TikTokImportPage extends StatefulWidget {
   const TikTokImportPage({super.key});
@@ -190,7 +227,12 @@ class _TikTokImportPageState extends State<TikTokImportPage> {
           onPressed: _found.isEmpty
               ? null
               : () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => TikTokSelectPage(urls: _found.values.toList()),
+                    builder: (_) => SelectStickersPage(
+                      loader: tiktokLoader(_found.values.toList()),
+                      importedPrefsKey: 'benito_tiktok_imported',
+                      baseTitle: BStr.packTitleTikTok,
+                      animatedTitle: BStr.packTitleTikTokAnimated,
+                    ),
                   )),
           backgroundColor: _found.isEmpty ? Theme.of(context).disabledColor : null,
           icon: Badge(

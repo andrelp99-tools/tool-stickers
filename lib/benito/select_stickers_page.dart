@@ -1,38 +1,57 @@
-// BenitoSticker: scarica gli sticker raccolti da TikTok, li mostra, l'utente
-// sceglie quali tenere, poi li converte e li mette nei pacchetti
-// "TikTok" (statici) e "TikTok animati".
+// BenitoSticker: pagina comune di scelta sticker. Carica le immagini da una
+// fonte (TikTok, sticker ricevuti su WhatsApp...), l'utente sceglie quali
+// tenere, poi vengono convertite e messe nei pacchetti (statici / animati).
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stickers/benito/pack_importer.dart';
 import 'package:stickers/benito/strings.dart';
-import 'package:stickers/benito/tiktok/tiktok_page.dart';
 import 'package:stickers/benito/webp_codec.dart';
 import 'package:stickers/src/globals.dart';
 
-const _importedKey = 'benito_tiktok_imported';
+/// Un'immagine candidata: [key] la riconosce tra un import e l'altro.
+class CandidateImage {
+  final String key;
+  final Uint8List bytes;
+
+  CandidateImage(this.key, this.bytes);
+}
+
+/// Carica le immagini; chiama [onProgress](fatte, totale, fallite) mentre procede.
+typedef CandidateLoader = Future<List<CandidateImage>> Function(
+    void Function(int done, int total, int failed) onProgress);
 
 class _Item {
-  final String url;
+  final String key;
   final Uint8List bytes;
   bool selected;
   final bool alreadyImported;
 
-  _Item(this.url, this.bytes, {required this.selected, required this.alreadyImported});
+  _Item(this.key, this.bytes, {required this.selected, required this.alreadyImported});
 }
 
-class TikTokSelectPage extends StatefulWidget {
-  final List<String> urls;
+class SelectStickersPage extends StatefulWidget {
+  final CandidateLoader loader;
 
-  const TikTokSelectPage({super.key, required this.urls});
+  /// Chiave SharedPreferences dove ricordare cosa è già stato importato.
+  final String importedPrefsKey;
+  final String baseTitle;
+  final String animatedTitle;
+
+  const SelectStickersPage({
+    super.key,
+    required this.loader,
+    required this.importedPrefsKey,
+    required this.baseTitle,
+    required this.animatedTitle,
+  });
 
   @override
-  State<TikTokSelectPage> createState() => _TikTokSelectPageState();
+  State<SelectStickersPage> createState() => _SelectStickersPageState();
 }
 
-class _TikTokSelectPageState extends State<TikTokSelectPage> {
+class _SelectStickersPageState extends State<SelectStickersPage> {
   final List<_Item> _items = [];
   int _done = 0;
   int _failed = 0;
@@ -46,38 +65,29 @@ class _TikTokSelectPageState extends State<TikTokSelectPage> {
     _download();
   }
 
+  int _total = 0;
+
   Future<void> _download() async {
     final prefs = await SharedPreferences.getInstance();
-    final imported = (prefs.getStringList(_importedKey) ?? []).toSet();
-    final client = http.Client();
+    final imported = (prefs.getStringList(widget.importedPrefsKey) ?? []).toSet();
+    List<CandidateImage> loaded = [];
     try {
-      // 4 download alla volta.
-      final queue = List<String>.from(widget.urls);
-      Future<void> worker() async {
-        while (queue.isNotEmpty) {
-          final url = queue.removeAt(0);
-          try {
-            final res = await client.get(Uri.parse(url), headers: {
-              'User-Agent': desktopUserAgent,
-              'Referer': 'https://www.tiktok.com/',
-            }).timeout(const Duration(seconds: 20));
-            if (res.statusCode == 200 && res.bodyBytes.isNotEmpty) {
-              final already = imported.contains(stickerKey(url));
-              _items.add(_Item(url, res.bodyBytes, selected: !already, alreadyImported: already));
-            } else {
-              _failed++;
-            }
-          } catch (_) {
-            _failed++;
-          }
-          _done++;
-          if (mounted) setState(() {});
-        }
-      }
-
-      await Future.wait(List.generate(4, (_) => worker()));
-    } finally {
-      client.close();
+      loaded = await widget.loader((done, total, failed) {
+        if (!mounted) return;
+        setState(() {
+          _done = done;
+          _total = total;
+          _failed = failed;
+        });
+      });
+    } catch (e) {
+      debugPrint('BenitoSticker: caricamento fallito: $e');
+    }
+    final seen = <String>{};
+    for (final c in loaded) {
+      if (!seen.add(c.key)) continue;
+      final already = imported.contains(c.key);
+      _items.add(_Item(c.key, c.bytes, selected: !already, alreadyImported: already));
     }
     if (mounted) setState(() => _downloading = false);
   }
@@ -96,9 +106,9 @@ class _TikTokSelectPageState extends State<TikTokSelectPage> {
     for (final item in chosen) {
       try {
         processed.add(await convertToSticker(item.bytes, mediaCacheDir));
-        keys.add(stickerKey(item.url));
+        keys.add(item.key);
       } catch (e) {
-        debugPrint('BenitoSticker: conversione fallita ${item.url}: $e');
+        debugPrint('BenitoSticker: conversione fallita ${item.key}: $e');
         failed++;
       }
       if (mounted) setState(() => _converted++);
@@ -106,13 +116,13 @@ class _TikTokSelectPageState extends State<TikTokSelectPage> {
 
     final summary = await addStickersToPacks(
       processed,
-      baseTitle: BStr.packTitleTikTok,
-      animatedTitle: BStr.packTitleTikTokAnimated,
+      baseTitle: widget.baseTitle,
+      animatedTitle: widget.animatedTitle,
     );
 
     final prefs = await SharedPreferences.getInstance();
-    final imported = (prefs.getStringList(_importedKey) ?? []).toSet()..addAll(keys);
-    await prefs.setStringList(_importedKey, imported.toList());
+    final imported = (prefs.getStringList(widget.importedPrefsKey) ?? []).toSet()..addAll(keys);
+    await prefs.setStringList(widget.importedPrefsKey, imported.toList());
 
     if (!mounted) return;
     setState(() => _converting = false);
@@ -134,7 +144,7 @@ class _TikTokSelectPageState extends State<TikTokSelectPage> {
 
   @override
   Widget build(BuildContext context) {
-    final total = widget.urls.length;
+    final total = _total;
     return Scaffold(
       appBar: AppBar(
         title: Text(BStr.chooseStickers),
