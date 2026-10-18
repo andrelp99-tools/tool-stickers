@@ -32,8 +32,14 @@ class StickerConversionException implements Exception {
 
 /// Converte [input] in sticker. [tempDir] serve per i fotogrammi temporanei.
 Future<ProcessedSticker> convertToSticker(Uint8List input, String tempDir) async {
-  final info = await compute(_probe, input);
-  if (info == null) throw StickerConversionException('Formato immagine non riconosciuto');
+  final probe = await compute(_probe, input);
+  if (probe == null) throw StickerConversionException('Formato immagine non riconosciuto');
+  final (info, width, height) = probe;
+  // Già uno sticker WhatsApp valido (es. ricevuto su WhatsApp): lo tengo com'è.
+  if (_isWebp(input) && width == stickerSize && height == stickerSize) {
+    if (info > 1 && input.lengthInBytes <= maxAnimatedBytes) return ProcessedSticker(input, true);
+    if (info == 1 && input.lengthInBytes <= maxStaticBytes) return ProcessedSticker(input, false);
+  }
   if (info > 1) {
     try {
       final animated = await _encodeAnimated(input, tempDir);
@@ -46,11 +52,16 @@ Future<ProcessedSticker> convertToSticker(Uint8List input, String tempDir) async
   return ProcessedSticker(await _encodeStatic(input), false);
 }
 
-/// Numero di fotogrammi, o null se l'immagine non si decodifica.
-int? _probe(Uint8List bytes) {
+bool _isWebp(Uint8List b) =>
+    b.length > 12 &&
+    b[0] == 0x52 && b[1] == 0x49 && b[2] == 0x46 && b[3] == 0x46 && // RIFF
+    b[8] == 0x57 && b[9] == 0x45 && b[10] == 0x42 && b[11] == 0x50; // WEBP
+
+/// (fotogrammi, larghezza, altezza), o null se l'immagine non si decodifica.
+(int, int, int)? _probe(Uint8List bytes) {
   final decoded = img.decodeImage(bytes);
   if (decoded == null) return null;
-  return decoded.numFrames;
+  return (decoded.numFrames, decoded.width, decoded.height);
 }
 
 Future<Uint8List> _encodeStatic(Uint8List input) async {

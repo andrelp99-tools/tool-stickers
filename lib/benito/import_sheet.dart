@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:stickers/benito/strings.dart';
 import 'package:stickers/benito/tiktok/tiktok_page.dart';
+import 'package:stickers/benito/whatsapp_received.dart';
 
 /// Pulsante per la barra in alto della home.
 class BenitoImportButton extends StatelessWidget {
@@ -37,6 +38,23 @@ void showBenitoImportSheet(BuildContext context) {
             onTap: () {
               Navigator.pop(sheetContext);
               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TikTokImportPage()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.chat_outlined),
+            title: Text(BStr.importWhatsApp),
+            subtitle: Text(BStr.importWhatsAppDesc),
+            trailing: IconButton(
+              tooltip: BStr.changeFolder,
+              icon: const Icon(Icons.folder_open_outlined),
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                openWhatsAppReceivedImport(context, forcePick: true);
+              },
+            ),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              openWhatsAppReceivedImport(context);
             },
           ),
           const SizedBox(height: 8),

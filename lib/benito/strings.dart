@@ -18,6 +18,23 @@ class BStr {
       _t('Accedi a TikTok, apri una chat e scorri: gli sticker vengono raccolti da soli',
           'Log in to TikTok, open a chat and scroll: stickers are collected automatically');
 
+  static String get importWhatsApp => _t('Sticker ricevuti su WhatsApp', 'Stickers received on WhatsApp');
+  static String get importWhatsAppDesc => _t(
+      'Mettili nei tuoi pacchetti, così li usi anche su Instagram e TikTok',
+      'Put them in your packs, so you can use them on Instagram and TikTok too');
+  static String get waFolderHelp => _t(
+      'Si apre la cartella "WhatsApp Stickers": tocca "Usa questa cartella" e poi "Consenti". '
+          'Va fatto solo la prima volta.',
+      'The "WhatsApp Stickers" folder opens: tap "Use this folder", then "Allow". Only needed the first time.');
+  static String get waFolderNotFound => _t(
+      'Se la cartella non si apre da sola: Android → media → com.whatsapp → WhatsApp → Media → WhatsApp Stickers.',
+      'If the folder does not open automatically: Android → media → com.whatsapp → WhatsApp → Media → WhatsApp Stickers.');
+  static String get changeFolder => _t('Cambia cartella', 'Change folder');
+  static String get packTitleWhatsApp => _t('Ricevuti WhatsApp', 'WhatsApp received');
+  static String get packTitleWhatsAppAnimated => _t('Ricevuti WhatsApp animati', 'WhatsApp received animated');
+  static String get cont => _t('Continua', 'Continue');
+  static String get cancel => _t('Annulla', 'Cancel');
+
   // Pagina TikTok
   static String get tiktokTitle => _t('Sticker da TikTok', 'TikTok stickers');
   static String found(int n) => _t('$n trovati', '$n found');
