@@ -31,6 +31,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        it.andrelp99.benito.BenitoChannels.register(this, flutterEngine) // BenitoSticker
 
         cropAndScale = CropAndScale()
         overlayAndEncode = OverlayAndEncode()

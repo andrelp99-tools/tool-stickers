@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:stickers/benito/import_sheet.dart';
 import 'package:stickers/generated/intl/app_localizations.dart';
 import 'package:stickers/src/constants.dart';
 import 'package:stickers/src/data/load_store.dart';
@@ -36,6 +37,7 @@ class StickerPacksPageState extends State<StickerPacksPage> {
   Widget build(BuildContext context) {
     return DefaultSliverActivity(
       actions: [
+        const BenitoImportButton(), // BenitoSticker
         IconButton(
           tooltip: AppLocalizations.of(context)!.settings,
           onPressed: () {

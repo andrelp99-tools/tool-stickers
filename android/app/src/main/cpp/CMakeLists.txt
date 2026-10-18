@@ -51,7 +51,8 @@ target_compile_options(webp-static PRIVATE
 )
 
 add_library(${CMAKE_PROJECT_NAME} SHARED
-        libwebp_connector.cpp)
+        libwebp_connector.cpp
+        benito_webp.cpp)
 target_link_libraries(${CMAKE_PROJECT_NAME}
         webp-static
         android
