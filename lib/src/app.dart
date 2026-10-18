@@ -104,6 +104,7 @@ class StickersAppState extends State<StickersApp> {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [
+            Locale('it', ''),
             Locale('en', ''), // English, no country code
             Locale('de', ''),
             Locale('fr', ''),

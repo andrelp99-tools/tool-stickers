@@ -43,7 +43,9 @@ class SettingsService {
   String _getLocale() {
     if (Platform.localeName.startsWith("de")) return "de";
     if (Platform.localeName.startsWith("fr")) return "fr";
-    return "en";
+    if (Platform.localeName.startsWith("ru")) return "ru";
+    if (Platform.localeName.startsWith("en")) return "en";
+    return "it"; // BenitoSticker: italiano predefinito
   }
 
   /// Persists the user's preferred ThemeMode to local or remote storage.

@@ -112,6 +112,12 @@ class SettingsPage extends StatelessWidget {
                       value: controller.locale,
                       items: [
                         DropdownMenuItem(
+                            value: "it",
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              child: Text("Italiano"),
+                            )),
+                        DropdownMenuItem(
                             value: "en",
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8),
