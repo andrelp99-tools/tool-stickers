@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import it.andrelp99.benito.whatsapp.BenitoWhatsApp
 import java.io.File
 
 /**
@@ -36,6 +37,7 @@ class BenitoPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandl
     companion object {
         const val CHANNEL = "it.andrelp99.benito/main"
         private const val REQ_WA_TREE = 47101
+        private const val REQ_WA_ADD = 47102
         private const val PREFS = "benito"
         private const val KEY_WA_TREE = "wa_stickers_tree"
         private const val WA_STICKERS_DOC =
@@ -48,6 +50,7 @@ class BenitoPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandl
     private var context: Context? = null
     private var activityBinding: ActivityPluginBinding? = null
     private var pendingTreeResult: MethodChannel.Result? = null
+    private var pendingAddResult: MethodChannel.Result? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         context = binding.applicationContext
@@ -118,6 +121,38 @@ class BenitoPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandl
                 }
             }
 
+            // Aggiungi a WhatsApp (provider BenitoSticker, vedi whatsapp/)
+            "waSend" -> {
+                val activity = activityBinding?.activity
+                if (activity == null) {
+                    result.error("NO_ACTIVITY", "App non in primo piano", null)
+                } else {
+                    pendingAddResult?.success(mapOf("status" to "cancelled"))
+                    pendingAddResult = result
+                    val ok = try {
+                        BenitoWhatsApp.startAdd(
+                            activity, call.argument<String>("identifier")!!, call.argument<String>("name")!!, REQ_WA_ADD
+                        )
+                    } catch (e: Exception) {
+                        pendingAddResult = null
+                        result.success(mapOf("status" to "error", "error" to e.toString()))
+                        return
+                    }
+                    if (!ok) {
+                        pendingAddResult = null
+                        result.success(mapOf("status" to "no_whatsapp"))
+                    }
+                }
+            }
+
+            "waIsAdded" -> background(result) {
+                BenitoWhatsApp.isAdded(context!!, call.argument<String>("identifier")!!) ?: false
+            }
+
+            "waDiagnose" -> background(result) {
+                BenitoWhatsApp.diagnose(context!!, call.argument<String>("identifier")!!, call.argument<String>("error"))
+            }
+
             "keyboardEnabled" -> {
                 val imm = context!!.getSystemService(Context.INPUT_METHOD_SERVICE)
                         as android.view.inputmethod.InputMethodManager
@@ -184,6 +219,20 @@ class BenitoPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandl
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
+        if (requestCode == REQ_WA_ADD) {
+            val r = pendingAddResult ?: return true
+            pendingAddResult = null
+            val extras = data?.extras
+            val status = when {
+                resultCode == Activity.RESULT_OK && extras?.containsKey("already_added") == true -> mapOf("status" to "already")
+                resultCode == Activity.RESULT_OK -> mapOf("status" to "added")
+                data?.getStringExtra("validation_error") != null ->
+                    mapOf("status" to "error", "error" to data?.getStringExtra("validation_error"))
+                else -> mapOf("status" to "cancelled")
+            }
+            r.success(status)
+            return true
+        }
         if (requestCode != REQ_WA_TREE) return false
         val result = pendingTreeResult ?: return true
         pendingTreeResult = null

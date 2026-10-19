@@ -57,6 +57,14 @@
                 android:resource="@xml/benito_file_paths" />
         </provider>
 
+        <!-- BenitoSticker: pacchetti per WhatsApp (formato del progetto ufficiale WhatsApp/stickers) -->
+        <provider
+            android:name="it.andrelp99.benito.whatsapp.BenitoWaProvider"
+            android:authorities="${applicationId}.benito.stickers"
+            android:enabled="true"
+            android:exported="true"
+            android:readPermission="com.whatsapp.sticker.READ" />
+
         <!-- BenitoSticker: scarica il modello "rimuovi sfondo" all'installazione -->
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
@@ -71,6 +79,8 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />

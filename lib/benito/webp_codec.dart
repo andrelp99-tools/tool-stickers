@@ -17,8 +17,9 @@ const int maxAnimationMs = 10000;
 class ProcessedSticker {
   final Uint8List data;
   final bool animated;
+  final List<String>? emojis;
 
-  ProcessedSticker(this.data, this.animated);
+  ProcessedSticker(this.data, this.animated, {this.emojis});
 }
 
 class StickerConversionException implements Exception {
@@ -50,6 +51,68 @@ Future<ProcessedSticker> convertToSticker(Uint8List input, String tempDir) async
     }
   }
   return ProcessedSticker(await _encodeStatic(input), false);
+}
+
+/// Rende [input] valido per un pacchetto WhatsApp statico o animato.
+/// Restituisce i byte (gli stessi se erano già validi) e se è stato ricodificato.
+Future<(Uint8List, bool)> fitForPack(Uint8List input, bool animatedPack, String tempDir) async {
+  final probe = await compute(_probe, input);
+  if (probe == null) throw StickerConversionException('Formato immagine non riconosciuto');
+  final (frames, width, height) = probe;
+  final squareWebp = _isWebp(input) && width == stickerSize && height == stickerSize;
+  if (!animatedPack) {
+    if (squareWebp && frames == 1 && input.lengthInBytes <= maxStaticBytes) return (input, false);
+    return (await _encodeStatic(input), true);
+  }
+  if (squareWebp && frames > 1 && input.lengthInBytes <= maxAnimatedBytes) return (input, false);
+  if (frames > 1) {
+    try {
+      final animated = await _encodeAnimated(input, tempDir);
+      if (animated != null) return (animated, true);
+    } catch (e) {
+      debugPrint('BenitoSticker: animato non riuscito ($e)');
+    }
+  }
+  // Statico in un pacchetto animato: due fotogrammi uguali (WhatsApp vuole solo animati qui)
+  return (await _staticAsAnimated(input, tempDir), true);
+}
+
+Future<Uint8List> _staticAsAnimated(Uint8List input, String tempDir) async {
+  final rgba = await compute(_prepareStatic, input);
+  final framesPath = '$tempDir/benito_still_${DateTime.now().microsecondsSinceEpoch}.raw';
+  final f = File(framesPath);
+  try {
+    await f.writeAsBytes([...rgba, ...rgba], flush: true);
+    for (final quality in [60.0, 40.0, 25.0, 15.0]) {
+      final out = await _channel.invokeMethod<Uint8List>('encodeAnimated', {
+        'framesPath': framesPath,
+        'durations': [1000, 1000],
+        'width': stickerSize,
+        'height': stickerSize,
+        'quality': quality,
+      });
+      if (out != null && out.lengthInBytes <= maxAnimatedBytes) return out;
+    }
+  } finally {
+    if (f.existsSync()) f.deleteSync();
+  }
+  throw StickerConversionException('Sticker troppo grande anche a qualità minima');
+}
+
+/// Icona del pacchetto per WhatsApp: PNG 96x96, max 50 kB.
+Future<Uint8List> makeTrayIcon(Uint8List sticker) => compute(_makeTray, sticker);
+
+Uint8List _makeTray(Uint8List bytes) {
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null) throw StickerConversionException('Icona non creata');
+  final first = decoded.numFrames > 1 ? decoded.frames.first : decoded;
+  for (final size in [96, 80, 64]) {
+    final small = img.copyResize(first.numChannels == 4 ? first : first.convert(numChannels: 4),
+        width: size, height: size, interpolation: img.Interpolation.average);
+    final png = img.encodePng(small, level: 9);
+    if (png.lengthInBytes <= 50 * 1024) return png;
+  }
+  throw StickerConversionException('Icona troppo grande');
 }
 
 bool _isWebp(Uint8List b) =>

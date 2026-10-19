@@ -89,4 +89,48 @@ class BStr {
   static String get packTitleTikTok => 'TikTok';
   static String get packTitleTikTokAnimated => _t('TikTok animati', 'TikTok animated');
   static String get ok => 'OK';
+
+  // Aggiungi a WhatsApp
+  static String get waPreparing => _t('Preparo il pacchetto per WhatsApp…', 'Preparing the pack for WhatsApp…');
+  static String get waAdded => _t('Pacchetto aggiunto a WhatsApp', 'Pack added to WhatsApp');
+  static String get waAlready => _t('Il pacchetto è già in WhatsApp', 'The pack is already in WhatsApp');
+  static String get waFailed => _t('WhatsApp non ha accettato il pacchetto', 'WhatsApp did not accept the pack');
+  static String get waNotInstalled => _t('WhatsApp non è installato', 'WhatsApp is not installed');
+  static String get waTooFew => _t('Servono almeno 3 sticker', 'At least 3 stickers are needed');
+  static String waRepaired(int n) => _t('$n sticker sistemati per WhatsApp', '$n stickers fixed for WhatsApp');
+  static String get copyDiagnosis => _t('Copia diagnosi', 'Copy diagnosis');
+  static String get diagnosisCopied => _t(
+      'Diagnosi copiata: incollala nella chat con Claude', 'Diagnosis copied: paste it in the chat with Claude');
+  static String get close => _t('Chiudi', 'Close');
+
+  // Copia / sposta
+  static String selectedN(int n) => _t('$n selezionati', '$n selected');
+  static String get copy => _t('Copia', 'Copy');
+  static String get cut => _t('Taglia', 'Cut');
+  static String get copyTo => _t('Copia in…', 'Copy to…');
+  static String get moveTo => _t('Sposta in…', 'Move to…');
+  static String get deleteSelected => _t('Elimina selezionati', 'Delete selected');
+  static String deleteNConfirm(int n) => _t('Eliminare $n sticker?', 'Delete $n stickers?');
+  static String pasteN(int n) => _t('Incolla ($n)', 'Paste ($n)');
+  static String copiedN(int n) => _t('$n sticker copiati: apri un pacchetto e tocca Incolla',
+      '$n stickers copied: open a pack and tap Paste');
+  static String cutN(int n) => _t('$n sticker tagliati: apri un pacchetto e tocca Incolla',
+      '$n stickers cut: open a pack and tap Paste');
+  static String get clearClipboard => _t('Svuota appunti', 'Clear clipboard');
+  static String pastedSummary(int n, List<String> packs) =>
+      _t('$n sticker in: ${packs.join(', ')}', '$n stickers in: ${packs.join(', ')}');
+  static String get chooseTargetPack => _t('Scegli il pacchetto', 'Choose the pack');
+  static String get newPack => _t('Nuovo pacchetto', 'New pack');
+  static String get packName => _t('Nome del pacchetto', 'Pack name');
+  static String get create => _t('Crea', 'Create');
+  static String get packMenu => _t('Altro', 'More');
+  static String get copyAllStickers => _t('Copia tutti gli sticker', 'Copy all stickers');
+  static String get copyPackInto => _t('Copia tutto in un altro pacchetto…', 'Copy all into another pack…');
+  static String get movePackInto => _t('Sposta tutto in un altro pacchetto…', 'Move all into another pack…');
+  static String get duplicatePack => _t('Duplica pacchetto', 'Duplicate pack');
+  static String get copySuffix => _t('copia', 'copy');
+  static String get animatedSuffix => _t('animati', 'animated');
+  static String get staticSuffix => _t('fissi', 'static');
+  static String get cantPasteSame => _t('Sono già in questo pacchetto', 'They are already in this pack');
+  static String get full => _t('pieno', 'full');
 }

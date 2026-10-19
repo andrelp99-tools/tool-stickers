@@ -2,6 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:stickers/benito/pack_tools.dart'; // BenitoSticker
+import 'package:stickers/benito/sticker_clipboard.dart'; // BenitoSticker
+import 'package:stickers/benito/strings.dart'; // BenitoSticker
+import 'package:stickers/benito/whatsapp_send.dart'; // BenitoSticker
 import 'package:stickers/generated/intl/app_localizations.dart';
 import 'package:stickers/src/checker_painter.dart';
 import 'package:stickers/src/constants.dart';
@@ -15,6 +19,7 @@ import 'package:stickers/src/globals.dart';
 import 'package:stickers/src/pages/crop_page.dart';
 import 'package:stickers/src/pages/default_page.dart';
 import 'package:stickers/src/util.dart';
+import 'package:stickers/src/data/sticker.dart'; // BenitoSticker
 
 class StickerPackPage extends StatefulWidget {
   final StickerPack pack;
@@ -29,6 +34,90 @@ class StickerPackPage extends StatefulWidget {
 }
 
 class StickerPackPageState extends State<StickerPackPage> {
+  // BenitoSticker: selezione multipla (tieni premuto uno sticker)
+  final Set<int> _sel = {};
+
+  bool get _selecting => _sel.isNotEmpty;
+
+  List<Sticker> get _selected => [for (final i in _sel.toList()..sort()) widget.pack.stickers[i]];
+
+  void _toggle(int i) => setState(() => _sel.contains(i) ? _sel.remove(i) : _sel.add(i));
+
+  Future<void> _clip(bool cut) async {
+    final n = _sel.length;
+    await StickerClipboard.instance.put(widget.pack, _selected, cut: cut);
+    setState(_sel.clear);
+    if (mounted) {
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(SnackBar(content: Text(cut ? BStr.cutN(n) : BStr.copiedN(n))));
+    }
+  }
+
+  Future<void> _sendTo(bool move) async {
+    final chosen = _selected;
+    final target = await pickTargetPack(context,
+        exclude: move ? widget.pack : null, animatedForNew: widget.pack.animated, suggestedName: widget.pack.title);
+    if (target == null) return;
+    final s = await addToPack(target, [
+      for (final st in chosen) (await File(st.source).readAsBytes(), widget.pack.animated, List.of(st.emojis)),
+    ]);
+    if (move) removeStickers(widget.pack, chosen.map((e) => e.source).toSet());
+    savePacks(packs);
+    homeState?.update();
+    setState(_sel.clear);
+    if (mounted) showPasteSummary(context, s);
+  }
+
+  Future<void> _deleteSelected() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(BStr.deleteNConfirm(_sel.length)),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(c).pop(false), child: Text(BStr.cancel)),
+          FilledButton(onPressed: () => Navigator.of(c).pop(true), child: Text(AppLocalizations.of(context)!.delete)),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    removeStickers(widget.pack, _selected.map((e) => e.source).toSet());
+    homeState?.update();
+    setState(_sel.clear);
+  }
+
+  List<Widget> _selectionActions() => [
+        IconButton(
+          tooltip: _sel.length == widget.pack.stickers.length ? BStr.selectNone : BStr.selectAll,
+          icon: const Icon(Icons.select_all),
+          onPressed: () => setState(() {
+            if (_sel.length == widget.pack.stickers.length) {
+              _sel.clear();
+            } else {
+              _sel.addAll(List.generate(widget.pack.stickers.length, (i) => i));
+            }
+          }),
+        ),
+        IconButton(tooltip: BStr.copy, icon: const Icon(Icons.copy), onPressed: () => _clip(false)),
+        IconButton(tooltip: BStr.cut, icon: const Icon(Icons.content_cut), onPressed: () => _clip(true)),
+        PopupMenuButton<String>(
+          onSelected: (v) {
+            switch (v) {
+              case 'copyTo':
+                _sendTo(false);
+              case 'moveTo':
+                _sendTo(true);
+              case 'delete':
+                _deleteSelected();
+            }
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem(value: 'copyTo', child: Text(BStr.copyTo)),
+            PopupMenuItem(value: 'moveTo', child: Text(BStr.moveTo)),
+            PopupMenuItem(value: 'delete', child: Text(BStr.deleteSelected)),
+          ],
+        ),
+      ];
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -36,7 +125,11 @@ class StickerPackPageState extends State<StickerPackPage> {
         children: [
           Expanded(
             child: DefaultSliverActivity(
-              actions: [
+              leading: _selecting
+                  ? IconButton(icon: const Icon(Icons.close), onPressed: () => setState(_sel.clear))
+                  : null,
+              actions: _selecting ? _selectionActions() : [
+                PasteButton(widget.pack, () => setState(() {})), // BenitoSticker
                 IconButton(
                   tooltip: AppLocalizations.of(context)!.edit,
                   onPressed: () {
@@ -66,8 +159,12 @@ class StickerPackPageState extends State<StickerPackPage> {
                   },
                   icon: const Icon(Icons.delete),
                 ),
+                PackMenuButton(widget.pack, () => setState(() {}), onPackGone: () {
+                  widget.deleteCallback();
+                  Navigator.of(context).pop();
+                }), // BenitoSticker
               ],
-              title: widget.pack.title,
+              title: _selecting ? BStr.selectedN(_sel.length) : widget.pack.title,
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: GridView.builder(
@@ -120,8 +217,29 @@ class StickerPackPageState extends State<StickerPackPage> {
                             : CustomPaint(
                                 painter: CheckerPainter(context),
                                 child: GestureDetector(
-                                  child: Image.file(File(widget.pack.stickers[index].source)),
+                                  onLongPress: () => _toggle(index), // BenitoSticker: selezione
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Image.file(File(widget.pack.stickers[index].source)),
+                                      if (_sel.contains(index))
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.primary.withValues(alpha: .25),
+                                            border: Border.all(color: Theme.of(context).colorScheme.primary, width: 4),
+                                            borderRadius: BorderRadius.circular(24),
+                                          ),
+                                          alignment: Alignment.topRight,
+                                          padding: const EdgeInsets.all(6),
+                                          child: Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary),
+                                        ),
+                                    ],
+                                  ),
                                   onTap: () {
+                                    if (_selecting) {
+                                      _toggle(index);
+                                      return;
+                                    }
                                     showDialog(
                                       context: context,
                                       builder: ((context) => EditStickerDialog(widget.pack, index)),
@@ -176,7 +294,7 @@ class StickerPackPageState extends State<StickerPackPage> {
                         child: FilledButton(
                           onPressed: widget.pack.stickers.length < 3
                               ? null
-                              : () => sendToWhatsappWithErrorHandling(widget.pack, context),
+                              : () => benitoAddToWhatsApp(widget.pack, context), // BenitoSticker
                           child: Text(AppLocalizations.of(context)!.addToWhatsapp),
                         ),
                       ),

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
+import 'package:stickers/benito/pack_tools.dart'; // BenitoSticker
 import 'package:stickers/generated/intl/app_localizations.dart';
 import 'package:stickers/src/checker_painter.dart';
 import 'package:stickers/src/constants.dart';
@@ -93,6 +94,7 @@ class _StickerPackPreviewCardState extends State<StickerPackPreviewCard> {
                       );
                     },
                   ),
+                  PackMenuButton(widget.pack, () => widget.deleteCallback()), // BenitoSticker
                 ],
               ),
             ),

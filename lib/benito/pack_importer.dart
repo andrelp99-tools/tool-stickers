@@ -26,6 +26,7 @@ Future<ImportSummary> addStickersToPacks(
   required String baseTitle,
   required String animatedTitle,
   bool appendToExisting = true,
+  StickerPack? preferred,
 }) async {
   final touched = <String>{};
   var added = 0;
@@ -35,7 +36,7 @@ Future<ImportSummary> addStickersToPacks(
     final title = animated ? animatedTitle : baseTitle;
     var index = 0;
     while (index < group.length) {
-      final pack = _packWithRoom(title, animated, appendToExisting);
+      final pack = _packWithRoom(title, animated, appendToExisting, preferred);
       final room = maxStickersPerPack - pack.stickers.length;
       final chunk = group.skip(index).take(room).toList();
       await Directory('$packsDir/${pack.id}').create(recursive: true);
@@ -43,7 +44,7 @@ Future<ImportSummary> addStickersToPacks(
       for (var i = 0; i < chunk.length; i++) {
         final file = File('$packsDir/${pack.id}/benito_${stamp}_$i.webp');
         await file.writeAsBytes(chunk[i].data);
-        pack.stickers.add(Sticker(file.path, ['❤']));
+        pack.stickers.add(Sticker(file.path, chunk[i].emojis ?? ['❤']));
       }
       pack.onEdit();
       touched.add(pack.title);
@@ -56,7 +57,14 @@ Future<ImportSummary> addStickersToPacks(
   return ImportSummary(added, touched.toList());
 }
 
-StickerPack _packWithRoom(String title, bool animated, bool appendToExisting) {
+StickerPack _packWithRoom(String title, bool animated, bool appendToExisting, [StickerPack? preferred]) {
+  // Il pacchetto scelto dall'utente va riempito per primo
+  if (preferred != null &&
+      preferred.animated == animated &&
+      preferred.title == title &&
+      preferred.stickers.length < maxStickersPerPack) {
+    return preferred;
+  }
   if (appendToExisting) {
     for (final p in packs) {
       if (p.animated == animated &&
@@ -80,6 +88,12 @@ StickerPack _packWithRoom(String title, bool animated, bool appendToExisting) {
     '0',
     animated,
   );
-  packs.add(pack);
+  // I pacchetti nuovi nati da un incolla vanno subito dopo quello scelto
+  final at = preferred == null ? -1 : packs.indexOf(preferred);
+  if (at >= 0) {
+    packs.insert(at + 1, pack);
+  } else {
+    packs.add(pack);
+  }
   return pack;
 }
