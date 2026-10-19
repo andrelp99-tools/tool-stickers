@@ -77,7 +77,7 @@ class StickerClipboard extends ChangeNotifier {
     if (_cut && _items.every((it) => it.sourcePackId == target.id)) {
       throw StateError(BStr.cantPasteSame);
     }
-    final summary = await addToPack(
+    final summary = await pasteStickersInto(
       target,
       [for (final it in _items) (await File(it.path).readAsBytes(), it.animated, it.emojis)],
     );
@@ -112,7 +112,7 @@ void removeStickers(StickerPack pack, Set<String> paths) {
 }
 
 /// Aggiunge sticker (byte, animato, emoji) a [target] seguendo le regole sopra.
-Future<ImportSummary> addToPack(StickerPack target, List<(Uint8List, bool, List<String>)> stickers) {
+Future<ImportSummary> pasteStickersInto(StickerPack target, List<(Uint8List, bool, List<String>)> stickers) {
   final sameTitle = target.title;
   final otherTitle = '${target.title} ${target.animated ? BStr.staticSuffix : BStr.animatedSuffix}';
   return addStickersToPacks(
@@ -128,7 +128,7 @@ Future<ImportSummary> mergePack(StickerPack source, StickerPack target, {require
   final items = [
     for (final s in source.stickers) (await File(s.source).readAsBytes(), source.animated, List.of(s.emojis)),
   ];
-  final summary = await addToPack(target, items);
+  final summary = await pasteStickersInto(target, items);
   if (move) {
     packs.remove(source);
     final dir = Directory('$packsDir/${source.id}');

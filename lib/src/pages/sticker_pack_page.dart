@@ -58,7 +58,7 @@ class StickerPackPageState extends State<StickerPackPage> {
     final target = await pickTargetPack(context,
         exclude: move ? widget.pack : null, animatedForNew: widget.pack.animated, suggestedName: widget.pack.title);
     if (target == null) return;
-    final s = await addToPack(target, [
+    final s = await pasteStickersInto(target, [
       for (final st in chosen) (await File(st.source).readAsBytes(), widget.pack.animated, List.of(st.emojis)),
     ]);
     if (move) removeStickers(widget.pack, chosen.map((e) => e.source).toSet());
