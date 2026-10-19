@@ -13,7 +13,8 @@ Fork personale di [Stickers](https://github.com/lolocomotive/stickers) (lolocomo
   - **Sticker ricevuti su WhatsApp**: cartella "WhatsApp Stickers" via selettore di sistema → pacchetti "Ricevuti WhatsApp".
   - **Tastiera sticker**: attivazione della tastiera Android con i pacchetti dell'app (+ recenti).
 - **Rimuovi sfondo** (ML Kit, sul telefono) nella schermata di ritaglio.
+- **Icona**: foto scelta da Andrea (icona adattiva in `mipmap-anydpi-v26`, sfondo nero).
 - Codice aggiunto in `lib/benito/`, `android/.../kotlin/it/andrelp99/benito/`, `android/.../cpp/benito_webp.cpp`; nei file originali solo poche righe marcate "BenitoSticker".
 
 ## In sospeso
-- Icona app (la fornisce Andrea).
+- (nulla)
