@@ -17,4 +17,3 @@ Fork personale di [Stickers](https://github.com/lolocomotive/stickers) (lolocomo
 
 ## In sospeso
 - Icona app (la fornisce Andrea).
-- Import pacchetti LINE / Signal da link (bassa priorità; Telegram escluso).
